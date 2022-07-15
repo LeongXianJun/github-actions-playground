@@ -33,16 +33,16 @@ jobs:
                   git push origin release/v$VERSION_MAJOR_MINOR
 
     bump-minor-version:
-        name: Bump minor version on master
+        name: Bump minor version on main
         runs-on: ubuntu-latest
         needs: [create-release-branch]
         steps:
             # ----------------------------------------------
-            # 1. Checkout master
+            # 1. Checkout main
             # ----------------------------------------------
             - uses: actions/checkout@v3
               with:
-                  ref: master
+                  ref: main
 
             # ----------------------------------------------
             # 2. Setup Node environment
@@ -88,9 +88,9 @@ jobs:
                   git push --set-upstream origin "$BRANCH_NAME"
 
             # ----------------------------------------------
-            # 7. Pull request to master
+            # 7. Pull request to main
             # ----------------------------------------------
-            - name: Create pull request and merge to master
+            - name: Create pull request and merge to main
               run: |
                   RELEASE_VERSION=${{ steps.release-version.outputs.current-version }}
                   NEW_VERSION=${{ steps.new-version.outputs.current-version }}
@@ -108,4 +108,4 @@ jobs:
                   "
 
                   gh auth login --with-token <<< ${{ secrets.GITHUB_TOKEN }}
-                  gh pr create --title "$PR_TITLE" --body "$PR_DESCRIPTION" --base "master" --head "${{ github.repository_owner }}:$BRANCH_NAME" --assignee "${{ github.actor }}"
+                  gh pr create --title "$PR_TITLE" --body "$PR_DESCRIPTION" --base "main" --head "${{ github.repository_owner }}:$BRANCH_NAME" --assignee "${{ github.actor }}"
