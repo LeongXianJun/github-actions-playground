@@ -1,0 +1,111 @@
+name: Prepare new release
+
+on: workflow_dispatch
+
+jobs:
+    create-release-branch:
+        name: Create new release branch
+        runs-on: ubuntu-latest
+        steps:
+            # ----------------------------------------------
+            # 1. Checkout master
+            # ----------------------------------------------
+            - uses: actions/checkout@v3
+              with:
+                  ref: master
+                  fetch-depth: 0
+
+            # ----------------------------------------------
+            # 2. Setup Node environment
+            # ----------------------------------------------
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: 16
+
+            # ----------------------------------------------
+            # 3. Create release branch
+            # ----------------------------------------------
+            - name: Create release branch
+              run: |
+                  VERSION_MAJOR_MINOR=$(node -e "console.log(require('./package.json').version.split('.').slice(0, -1).join('.'))")
+                  git branch -r | grep origin/release/v$VERSION_MAJOR_MINOR$ && echo "Invalid version as the release branch already exists." && exit 1
+                  git checkout -b release/v$VERSION_MAJOR_MINOR
+                  git push origin release/v$VERSION_MAJOR_MINOR
+
+    bump-minor-version:
+        name: Bump minor version on master
+        runs-on: ubuntu-latest
+        needs: [create-release-branch]
+        steps:
+            # ----------------------------------------------
+            # 1. Checkout master
+            # ----------------------------------------------
+            - uses: actions/checkout@v3
+              with:
+                  ref: master
+
+            # ----------------------------------------------
+            # 2. Setup Node environment
+            # ----------------------------------------------
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: 16
+
+            # ----------------------------------------------
+            # 3. Extract release version
+            # ----------------------------------------------
+            - name: Get release version
+              id: release-version
+              uses: martinbeentjes/npm-get-version-action@main
+
+            # ----------------------------------------------
+            # 4. Bump minor version
+            # ----------------------------------------------
+            - name: Bump minor version in package.json
+              run: yarn version --minor --no-git-tag-version
+
+            # ----------------------------------------------
+            # 5. Extract new version
+            # ----------------------------------------------
+            - name: Get new version
+              id: new-version
+              uses: martinbeentjes/npm-get-version-action@main
+
+            # ----------------------------------------------
+            # 6. Commit changes
+            # ----------------------------------------------
+            - name: Commit package.json
+              run: |
+                  NEW_VERSION=${{ steps.new-version.outputs.current-version }}
+                  BRANCH_NAME="bump-version-v$NEW_VERSION"
+
+                  git config user.name github-actions
+                  git config user.email github-actions@github.com
+
+                  git checkout -b "$BRANCH_NAME"
+                  git add package.json
+                  git commit -m "bump(app): bump version to v$NEW_VERSION"
+                  git push --set-upstream origin "$BRANCH_NAME"
+
+            # ----------------------------------------------
+            # 7. Pull request to master
+            # ----------------------------------------------
+            - name: Create pull request and merge to master
+              run: |
+                  RELEASE_VERSION=${{ steps.release-version.outputs.current-version }}
+                  NEW_VERSION=${{ steps.new-version.outputs.current-version }}
+                  BRANCH_NAME="bump-version-v$NEW_VERSION"
+
+                  PR_TITLE="bump(app): bump version to v$NEW_VERSION"
+                  PR_DESCRIPTION="
+                  ## Description
+                  Bump app version to v$NEW_VERSION by @${{ github.actor }}.
+
+                  ## Release checklist
+                  - [ ] v$RELEASE_VERSION release draft: <add_link_here>
+                  - [ ] Slack announcement in [#experimentation-core](https://moneylion.slack.com/app_redirect?channel=C02G3198TFA)
+                  > Let's comment in the thread below after the checklist is ready for approval.
+                  "
+
+                  gh auth login --with-token <<< ${{ secrets.GITHUB_TOKEN }}
+                  gh pr create --title "$PR_TITLE" --body "$PR_DESCRIPTION" --base "master" --head "${{ github.repository_owner }}:$BRANCH_NAME" --assignee "${{ github.actor }}"
