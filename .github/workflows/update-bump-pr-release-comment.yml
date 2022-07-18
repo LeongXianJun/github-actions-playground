@@ -45,9 +45,10 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          echo "::set-output name=body::${{gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
+          changelog=$(gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
             -f tag_name="${GITHUB_REF#refs/tags/}" \
-            -f target_commitish=trunk \}}"
+            -f target_commitish=trunk \)
+          echo "::set-output name=body::${changelog}""
 
       # ----------------------------------------------
       # 4. Get id of first comment
