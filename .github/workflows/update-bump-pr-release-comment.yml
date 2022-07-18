@@ -11,7 +11,7 @@ jobs:
     if: |
       github.event.issue.pull_request &&
       contains(github.event.issue.pull_request.name, 'bump-version-v') &&
-      startsWith(github.event.inputs.from_branch, '/')
+      startsWith(github.event.comment.body, '/')
     runs-on: ubuntu-latest
     steps:
       # ----------------------------------------------
@@ -25,7 +25,7 @@ jobs:
       # 2. Cherry pick merge commit OR
       # ----------------------------------------------
       - name: Cherry pick merge commit
-        if: startsWith(github.event.inputs.from_branch, '/cherry-pick')
+        if: startsWith(github.event.comment.body, '/cherry-pick')
         run: |
           message=${{ github.event.comment.body }}
           git cherry-pick -m 1 "${message:13}"
