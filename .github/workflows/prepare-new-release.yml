@@ -91,6 +91,7 @@ jobs:
             # 7. Pull request to main
             # ----------------------------------------------
             - name: Create pull request and merge to main
+              id: create-pr
               run: |
                   RELEASE_VERSION=${{ steps.release-version.outputs.current-version }}
                   NEW_VERSION=${{ steps.new-version.outputs.current-version }}
@@ -108,4 +109,22 @@ jobs:
                   "
 
                   gh auth login --with-token <<< ${{ secrets.GITHUB_TOKEN }}
-                  gh pr create --title "$PR_TITLE" --body "$PR_DESCRIPTION" --base "main" --head "${{ github.repository_owner }}:$BRANCH_NAME" --assignee "${{ github.actor }}"
+                  echo "::set-output name=pr::${{gh pr create --title "$PR_TITLE" --body "$PR_DESCRIPTION" --base "main" --head "${{ github.repository_owner }}:$BRANCH_NAME" --assignee "${{ github.actor }}"}}"
+
+            # ----------------------------------------------
+            # 8. Generate Release Note
+            # ----------------------------------------------
+            - name: Generate changelog
+              id: changelog
+              run: |
+                echo "::set-output name=tag-name::${GITHUB_REF#refs/tags/}"
+                gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
+                  -f tag_name="${GITHUB_REF#refs/tags/}" \
+                  -f target_commitish=trunk \
+                  -q .body > CHANGELOG.md
+
+            # ----------------------------------------------
+            # 9. Make first comment using the release note
+            # ----------------------------------------------
+            - name: Add release note comment
+              run: gh pr comment ${{ steps.create-pr.outputs.pr }} -F CHANGELOG.md

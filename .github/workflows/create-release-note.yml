@@ -1,0 +1,74 @@
+name: Create Release Note
+
+# on: workflow_dispatch
+on:
+  pull_request:
+    branches:
+      - bump-version-v**
+    types:
+      - closed
+
+jobs:
+  create-release-draft:
+    name: Create release draft
+    # if: github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    steps:
+      # ----------------------------------------------
+      # 1. Get tag
+      # ----------------------------------------------
+      - name: Extract branch name
+        id: get-tag
+        run: echo "::set-output name=tag::$(echo ${GITHUB_HEAD_REF#bump-version-})"
+
+      # ----------------------------------------------
+      # 2. Create release note
+      # ----------------------------------------------
+      - name: Create release note
+        run: gh release create ${{ steps.get-tag.outputs.tag }} --generate-notes
+
+    # steps:
+    #   # ----------------------------------------------
+    #   # 1. Get the latest release branch
+    #   # ----------------------------------------------
+    #   - name: Get latest release branch
+    #     id: get-latest-release-branch
+    #     run:
+    #       target_branch=$(git branch --sort=-committerdate -a | grep remotes/origin/release/ | head -n 1 | sed 's/ //g' | sed 's/remotes\/origin\///g')
+    #       echo "::set-output name=latest-release-branch::$(echo $target_branch)\n"
+    #       echo "::set-output name=release-version::$(echo $target_branch | sed 's/release\///g')\n"
+
+    #   # ----------------------------------------------
+    #   # 2. Checkout latest release branch
+    #   # ----------------------------------------------
+    #   - uses: actions/checkout@v3
+    #     with:
+    #       ref: ${{ steps.get-latest-release-branch.outputs.latest-release-branch }}
+
+    #   # ----------------------------------------------
+    #   # 3. Get merge commit list and generate release draft notes
+    #   # nid more testing at this step
+    #   # ----------------------------------------------
+    #   - name: Generate release draft notes
+    #     run: git log --oneline v1.5.4...v1.5.5 | grep 'Merge pull request'
+
+    #   - name: Generate changelog
+    #     id: changelog
+    #     run: |
+    #       echo "::set-output name=tag-name::${GITHUB_REF#refs/tags/}"
+    #       gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
+    #         -f tag_name="${GITHUB_REF#refs/tags/}" \
+    #         -f target_commitish=trunk \
+    #         -q .body > CHANGELOG.md
+    #     env:
+    #       GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    # ----------------------------------------------
+    # 4. Create release draft
+    # ----------------------------------------------
+    # - uses: actions/create-release@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+    #   with:
+    #     tag_name: ${{ steps.get-latest-release-branch.outputs.release-version }}
+    #     release_name: ${{  steps.get-latest-release-branch.outputs.release-version}}
+    #     draft: true

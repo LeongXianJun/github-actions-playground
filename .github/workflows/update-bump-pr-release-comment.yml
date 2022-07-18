@@ -1,0 +1,76 @@
+name: Update bump pr release comment
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  update_release_comment:
+    name: Create release draft
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.issue.pull_request.name, 'bump-version-v') &&
+      startsWith(github.event.inputs.from_branch, '/')
+    runs-on: ubuntu-latest
+    steps:
+      # ----------------------------------------------
+      # 1. Checkout to target branch
+      # ----------------------------------------------
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.issue.number }}
+
+      # ----------------------------------------------
+      # 2. Cherry pick merge commit OR
+      # ----------------------------------------------
+      - name: Cherry pick merge commit
+        if: startsWith(github.event.inputs.from_branch, '/cherry-pick')
+        run: git cherry-pick -m 1 ${{ github.event.comment.body }}
+
+      # ----------------------------------------------
+      # 2. Revert commit
+      # ----------------------------------------------
+      - name: Revert commit
+        if: startsWith(github.event.comment.body, '/revert')
+        run: git revert -m 1 ${{ github.event.comment.body }}
+
+      # ----------------------------------------------
+      # 3. Generate changelog
+      # ----------------------------------------------
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "::set-output name=body::${{gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
+            -f tag_name="${GITHUB_REF#refs/tags/}" \
+            -f target_commitish=trunk \}}"
+
+      # ----------------------------------------------
+      # 4. Get id of first comment
+      # ----------------------------------------------
+      - name: Find comment
+        uses: peter-evans/find-comment@v2
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: What's Changed
+
+      # ----------------------------------------------
+      # 5. Create release comment OR
+      # ----------------------------------------------
+      - name: Create comment
+        if: steps.fc.outputs.comment-id == ''
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.changelog.outputs.body }}
+
+      # ----------------------------------------------
+      # 5. Update release comment
+      # ----------------------------------------------
+      - name: Update comment
+        if: steps.fc.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          body: ${{ steps.changelog.outputs.body }}
