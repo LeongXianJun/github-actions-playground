@@ -36,6 +36,7 @@ jobs:
           VERSION_MAJOR_MINOR=$(node -e "console.log(require('./package.json').version.split('.').slice(0, -1).join('.'))")
           git branch -r | grep origin/release/v$VERSION_MAJOR_MINOR$
           git checkout release/v$VERSION_MAJOR_MINOR
+          git fetch --tag -f
 
       # ----------------------------------------------
       # 4. Cherry pick merge commit OR
