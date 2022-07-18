@@ -45,7 +45,7 @@ jobs:
         run: |
           message=${{ github.event.comment.body }}
           message=${message:13}
-          git cherry-pick -m 1 "${message}"
+          git cherry-pick -m 1 $message
 
       # ----------------------------------------------
       # 4. Revert commit
@@ -55,7 +55,7 @@ jobs:
         run: |
           message=${{ github.event.comment.body }}
           message=${message:8}
-          git revert -m 1 "${message}"
+          git revert -m 1 $message
 
       # ----------------------------------------------
       # 5. Push changes
