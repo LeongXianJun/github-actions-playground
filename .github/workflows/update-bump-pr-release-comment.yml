@@ -44,7 +44,7 @@ jobs:
         if: startsWith(github.event.comment.body, '/cherry-pick')
         run: |
           message=${{ github.event.comment.body }}
-          message=${message:13}
+          message="${message:13}"
           git cherry-pick -m 1 $message
 
       # ----------------------------------------------
@@ -54,7 +54,7 @@ jobs:
         if: startsWith(github.event.comment.body, '/revert')
         run: |
           message=${{ github.event.comment.body }}
-          message=${message:8}
+          message="${message:8}"
           git revert -m 1 $message
 
       # ----------------------------------------------
