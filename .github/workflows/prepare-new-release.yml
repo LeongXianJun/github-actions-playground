@@ -109,7 +109,8 @@ jobs:
                   "
 
                   gh auth login --with-token <<< ${{ secrets.GITHUB_TOKEN }}
-                  echo "::set-output name=pr::${{gh pr create --title "$PR_TITLE" --body "$PR_DESCRIPTION" --base "main" --head "${{ github.repository_owner }}:$BRANCH_NAME" --assignee "${{ github.actor }}"}}"
+                  pr_link=$(gh pr create --title "$PR_TITLE" --body "$PR_DESCRIPTION" --base "main" --head "${{ github.repository_owner }}:$BRANCH_NAME" --assignee "${{ github.actor }}")
+                  echo "::set-output name=pr::${pr_link}"
 
             # ----------------------------------------------
             # 8. Generate Release Note
