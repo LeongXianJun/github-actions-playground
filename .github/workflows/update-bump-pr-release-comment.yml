@@ -10,7 +10,6 @@ jobs:
     name: Create release draft
     if: |
       github.event.issue.pull_request &&
-      contains(github.ref_name, 'bump-version-v') &&
       startsWith(github.event.comment.body, '/')
     runs-on: ubuntu-latest
     steps:
