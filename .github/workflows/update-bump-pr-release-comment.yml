@@ -17,27 +17,52 @@ jobs:
       # 1. Checkout to target branch
       # ----------------------------------------------
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
 
       # ----------------------------------------------
-      # 2. Cherry pick merge commit OR
+      # 2. Setup Node environment
+      # ----------------------------------------------
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      # ----------------------------------------------
+      # 3. Checkout to release branch
+      # ----------------------------------------------
+      - name: Checkout to release branch
+        run: |
+          VERSION_MAJOR_MINOR=$(node -e "console.log(require('./package.json').version.split('.').slice(0, -1).join('.'))")
+          git checkout release/v$VERSION_MAJOR_MINOR
+
+      # ----------------------------------------------
+      # 4. Cherry pick merge commit OR
       # ----------------------------------------------
       - name: Cherry pick merge commit
         if: startsWith(github.event.comment.body, '/cherry-pick')
         run: |
           message=${{ github.event.comment.body }}
-          git cherry-pick -m 1 "${message:13}"
+          message=${message:13}
+          git cherry-pick -m 1 "${message}"
 
       # ----------------------------------------------
-      # 2. Revert commit
+      # 4. Revert commit
       # ----------------------------------------------
       - name: Revert commit
         if: startsWith(github.event.comment.body, '/revert')
         run: |
           message=${{ github.event.comment.body }}
-          git revert -m 1 "${message:8}"
+          message=${message:8}
+          git revert -m 1 "${message}"
 
       # ----------------------------------------------
-      # 3. Generate changelog
+      # 5. Push changes
+      # ----------------------------------------------
+      - name: Commit changes
+        run: git push
+
+      # ----------------------------------------------
+      # 6. Generate changelog
       # ----------------------------------------------
       - name: Generate changelog
         id: changelog
@@ -48,7 +73,7 @@ jobs:
           echo "::set-output name=body::${changelog}""
 
       # ----------------------------------------------
-      # 4. Get id of first comment
+      # 7. Get id of first comment
       # ----------------------------------------------
       - name: Find comment
         uses: peter-evans/find-comment@v2
@@ -58,7 +83,7 @@ jobs:
           body-includes: Full Changelog
 
       # ----------------------------------------------
-      # 5. Create release comment OR
+      # 8. Create release comment OR
       # ----------------------------------------------
       - name: Create comment
         if: steps.fc.outputs.comment-id == ''
@@ -68,7 +93,7 @@ jobs:
           body: ${{ steps.changelog.outputs.body }}
 
       # ----------------------------------------------
-      # 5. Update release comment
+      # 8. Update release comment
       # ----------------------------------------------
       - name: Update comment
         if: steps.fc.outputs.comment-id != ''
