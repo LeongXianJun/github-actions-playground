@@ -13,13 +13,10 @@ jobs:
       startsWith(github.event.comment.body, '/')
     runs-on: ubuntu-latest
     steps:
-      - run: echo ${{ toJSON(github) }}
-
       # ----------------------------------------------
       # 1. Checkout to target branch
       # ----------------------------------------------
       - uses: actions/checkout@v3
-      - run: echo ${{ toJSON(github) }}
 
       # ----------------------------------------------
       # 2. Cherry pick merge commit OR
