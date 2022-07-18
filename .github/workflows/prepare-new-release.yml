@@ -118,10 +118,9 @@ jobs:
             - name: Generate changelog
               id: changelog
               run: |
-                echo "::set-output name=tag-name::${GITHUB_REF#refs/tags/}"
                 gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
                   -f tag_name="${GITHUB_REF#refs/tags/}" \
-                  -f target_commitish=trunk \
+                  -f target_commitish=main \
                   -q .body > CHANGELOG.md
 
             # ----------------------------------------------
