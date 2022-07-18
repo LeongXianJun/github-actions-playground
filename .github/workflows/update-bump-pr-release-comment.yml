@@ -80,7 +80,7 @@ jobs:
           changelog=$(gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
             -f tag_name="v$CURRENT_VERSION" \
             -f target_commitish=main)
-          echo "::set-output name=body::$changelog"env:
+          echo "::set-output name=body::${changelog.body}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
