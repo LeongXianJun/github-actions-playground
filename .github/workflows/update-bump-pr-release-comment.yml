@@ -26,14 +26,18 @@ jobs:
       # ----------------------------------------------
       - name: Cherry pick merge commit
         if: startsWith(github.event.inputs.from_branch, '/cherry-pick')
-        run: git cherry-pick -m 1 ${{ github.event.comment.body }}
+        run: |
+          message=${{ github.event.comment.body }}
+          git cherry-pick -m 1 "${message:13}"
 
       # ----------------------------------------------
       # 2. Revert commit
       # ----------------------------------------------
       - name: Revert commit
         if: startsWith(github.event.comment.body, '/revert')
-        run: git revert -m 1 ${{ github.event.comment.body }}
+        run: |
+          message=${{ github.event.comment.body }}
+          git revert -m 1 "${message:8}"
 
       # ----------------------------------------------
       # 3. Generate changelog
