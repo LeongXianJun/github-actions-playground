@@ -23,9 +23,10 @@ jobs:
 
       # ----------------------------------------------
       # 2. Create release note
+      # -d ==> draft
       # ----------------------------------------------
       - name: Create release note
-        run: gh release create ${{ steps.get-tag.outputs.tag }} --generate-notes
+        run: gh release create ${{ steps.get-tag.outputs.tag }} -d --generate-notes
 
     # steps:
     #   # ----------------------------------------------
