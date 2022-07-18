@@ -79,7 +79,7 @@ jobs:
           changelog=$(gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
             -f tag_name="${GITHUB_REF#refs/tags/}" \
             -f target_commitish=main \)
-          echo "::set-output name=body::${changelog}""
+          echo "::set-output name=body::$changelog"
 
       # ----------------------------------------------
       # 7. Get id of first comment
