@@ -45,9 +45,10 @@ jobs:
         if: startsWith(github.event.comment.body, '/cherry-pick')
         run: |
           message="${{ github.event.comment.body }}"
-          echo $message
           message="${message:13}"
-          echo $message
+
+          git config user.name github-actions
+          git config user.email github-actions@github.com
           git cherry-pick -m 1 $message
 
       # ----------------------------------------------
@@ -56,8 +57,11 @@ jobs:
       - name: Revert commit
         if: startsWith(github.event.comment.body, '/revert')
         run: |
-          message=${{ github.event.comment.body }}
+          message="${{ github.event.comment.body }}"
           message="${message:8}"
+
+          git config user.name github-actions
+          git config user.email github-actions@github.com
           git revert -m 1 $message
 
       # ----------------------------------------------
