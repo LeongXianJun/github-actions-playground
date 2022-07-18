@@ -44,7 +44,7 @@ jobs:
       - name: Cherry pick merge commit
         if: startsWith(github.event.comment.body, '/cherry-pick')
         run: |
-          message=${{ github.event.comment.body }}
+          message="${{ github.event.comment.body }}"
           echo $message
           message="${message:13}"
           echo $message
