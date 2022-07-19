@@ -130,5 +130,5 @@ jobs:
         uses: peter-evans/create-or-update-comment@v2
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
-          # edit-mode: replace
+          edit-mode: replace
           body: ${{ steps.changelog.outputs.body }}
