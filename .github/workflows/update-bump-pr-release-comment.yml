@@ -85,6 +85,7 @@ jobs:
           body="${body//'%'/'%25'}"
           body="${body//$'\n'/'%0A'}"
           body="${body//$'\r'/'%0D'}"
+          echo $body
           echo "::set-output name=body::$body"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -107,7 +108,7 @@ jobs:
         uses: peter-evans/create-or-update-comment@v2
         with:
           issue-number: ${{ github.event.issue.number }}
-          body: ${{ steps.get-comment-body.outputs.body }}
+          body: ${{ steps.changelog.outputs.body }}
 
       # ----------------------------------------------
       # 8. Update release comment
@@ -118,4 +119,4 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           # edit-mode: replace
-          body: ${{ steps.get-comment-body.outputs.body }}
+          body: ${{ steps.changelog.outputs.body }}
