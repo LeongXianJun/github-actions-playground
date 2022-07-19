@@ -20,14 +20,14 @@ jobs:
         id: get-latest-release-branch
         run:
           target_branch=$(git branch --sort=-committerdate -a | grep remotes/origin/release/ | head -n 1 | sed 's/ //g' | sed 's/remotes\/origin\///g')
-          echo "::set-output name=latest-release-branch::$(echo $target_branch)\n"
+          echo "::set-output name=branch::$(echo $target_branch)\n"
 
       # ----------------------------------------------
       # 2. Checkout latest release branch
       # ----------------------------------------------
       - uses: actions/checkout@v3
         with:
-          ref: ${{ steps.get-latest-release-branch.outputs.latest-release-branch }}
+          ref: ${{ steps.get-latest-release-branch.outputs.branch }}
 
       # ----------------------------------------------
       # 3. Setup Node environment
@@ -75,14 +75,15 @@ jobs:
 
       # ----------------------------------------------
       # 7. Create release note
-      #    -d ==> draft
       #    -n ==> notes
+      #    -d ==> draft
       # ----------------------------------------------
       - name: Create release note
         run: |
           RELEASE_TAG="${{ steps.get-release-tag.outputs.tag }}"
+          TARGET_BRANCH="${{ steps.get-latest-release-branch.outputs.branch }}"
           NOTE="${{ steps.changelog.outputs.body }}"
 
-          gh release create v$RELEASE_TAG -d -n $NOTE
+          gh release create v$RELEASE_TAG --target $TARGET_BRANCH -n $NOTE -d
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
