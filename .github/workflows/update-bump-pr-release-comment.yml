@@ -32,12 +32,15 @@ jobs:
       # 3. Checkout to release branch
       # ----------------------------------------------
       - name: Checkout to release branch
+        id: checkout-latest-branch
         run: |
           CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)")
           VERSION_MAJOR_MINOR=$(node -e "console.log(require('./package.json').version.split('.').slice(0, -1).join('.'))")
           git branch -r | grep origin/release/v$VERSION_MAJOR_MINOR$
           git checkout release/v$VERSION_MAJOR_MINOR
           git fetch --tag -f
+
+          echo "::set-output name=current-version::$CURRENT_VERSION"
 
       # ----------------------------------------------
       # 4. Cherry pick merge commit OR
@@ -78,14 +81,12 @@ jobs:
         id: changelog
         run: |
           changelog=$(gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
-            -f tag_name="v$CURRENT_VERSION" \
+            -f tag_name="v${{ steps.checkout-latest-branch.outputs.current-version}}" \
             -f target_commitish=main | jq -r ".body")
-          echo $changelog
           body=$changelog
           body="${body//'%'/'%25'}"
           body="${body//$'\n'/'%0A'}"
           body="${body//$'\r'/'%0D'}"
-          echo $body
           echo "::set-output name=body::$body"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
