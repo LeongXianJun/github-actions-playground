@@ -95,18 +95,29 @@ jobs:
           body-includes: Full Changelog
 
       # ----------------------------------------------
-      # 8. Create release comment OR
+      # 8. Format string
+      # ----------------------------------------------
+      - name: Format string
+        id: get-comment-body
+        run: |
+          body="${{ steps.changelog.outputs.body }}"
+          body="${body//'%'/'%25'}"
+          body="${body//$'\n'/'%0A'}"
+          body="${body//$'\r'/'%0D'}" 
+          echo "::set-output name=body::$body"
+
+      # ----------------------------------------------
+      # 9. Create release comment OR
       # ----------------------------------------------
       - name: Create comment
         if: steps.fc.outputs.comment-id == ''
         uses: peter-evans/create-or-update-comment@v2
         with:
           issue-number: ${{ github.event.issue.number }}
-          body: |
-            ${{ steps.changelog.outputs.body }}
+          body: ${{ steps.get-comment-body.outputs.body }}
 
       # ----------------------------------------------
-      # 8. Update release comment
+      # 9. Update release comment
       # ----------------------------------------------
       - name: Update comment
         if: steps.fc.outputs.comment-id != ''
@@ -114,5 +125,4 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           edit-mode: replace
-          body: |
-            ${{ steps.changelog.outputs.body }}
+          body: ${{ steps.get-comment-body.outputs.body }}
