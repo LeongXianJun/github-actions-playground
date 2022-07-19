@@ -80,7 +80,12 @@ jobs:
           changelog=$(gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
             -f tag_name="v$CURRENT_VERSION" \
             -f target_commitish=main | jq -r ".body")
-          echo "::set-output name=body::$changelog"
+          echo $changelog
+          body=$changelog
+          body="${body//'%'/'%25'}"
+          body="${body//$'\n'/'%0A'}"
+          body="${body//$'\r'/'%0D'}"
+          echo "::set-output name=body::$body"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -95,19 +100,7 @@ jobs:
           body-includes: Full Changelog
 
       # ----------------------------------------------
-      # 8. Format string
-      # ----------------------------------------------
-      - name: Format string
-        id: get-comment-body
-        run: |
-          body="${{ steps.changelog.outputs.body }}"
-          body="${body//'%'/'%25'}"
-          body="${body//$'\n'/'%0A'}"
-          body="${body//$'\r'/'%0D'}" 
-          echo "::set-output name=body::$body"
-
-      # ----------------------------------------------
-      # 9. Create release comment OR
+      # 8. Create release comment OR
       # ----------------------------------------------
       - name: Create comment
         if: steps.fc.outputs.comment-id == ''
@@ -117,12 +110,12 @@ jobs:
           body: ${{ steps.get-comment-body.outputs.body }}
 
       # ----------------------------------------------
-      # 9. Update release comment
+      # 8. Update release comment
       # ----------------------------------------------
       - name: Update comment
         if: steps.fc.outputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v2
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
-          edit-mode: replace
+          # edit-mode: replace
           body: ${{ steps.get-comment-body.outputs.body }}
