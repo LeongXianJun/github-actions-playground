@@ -102,7 +102,8 @@ jobs:
         uses: peter-evans/create-or-update-comment@v2
         with:
           issue-number: ${{ github.event.issue.number }}
-          body: ${{ steps.changelog.outputs.body }}
+          body: |
+            ${{ steps.changelog.outputs.body }}
 
       # ----------------------------------------------
       # 8. Update release comment
@@ -112,4 +113,6 @@ jobs:
         uses: peter-evans/create-or-update-comment@v2
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
-          body: ${{ steps.changelog.outputs.body }}
+          edit-mode: replace
+          body: |
+            ${{ steps.changelog.outputs.body }}
