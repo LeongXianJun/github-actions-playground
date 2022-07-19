@@ -1,6 +1,5 @@
 name: Create Release Note
 
-# on: workflow_dispatch
 on:
   pull_request:
     branches:
@@ -11,65 +10,79 @@ on:
 jobs:
   create-release-draft:
     name: Create release draft
-    # if: github.event.pull_request.merged
+    if: github.event.pull_request.merged
     runs-on: ubuntu-latest
     steps:
       # ----------------------------------------------
-      # 1. Get tag
+      # 1. Get the latest release branch
       # ----------------------------------------------
-      - name: Extract branch name
-        id: get-tag
-        run: echo "::set-output name=tag::$(echo ${GITHUB_HEAD_REF#bump-version-})"
+      - name: Get latest release branch
+        id: get-latest-release-branch
+        run:
+          target_branch=$(git branch --sort=-committerdate -a | grep remotes/origin/release/ | head -n 1 | sed 's/ //g' | sed 's/remotes\/origin\///g')
+          echo "::set-output name=latest-release-branch::$(echo $target_branch)\n"
 
       # ----------------------------------------------
-      # 2. Create release note
-      # -d ==> draft
+      # 2. Checkout latest release branch
+      # ----------------------------------------------
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ steps.get-latest-release-branch.outputs.latest-release-branch }}
+
+      # ----------------------------------------------
+      # 3. Setup Node environment
+      # ----------------------------------------------
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      # ----------------------------------------------
+      # 4. Get release tag
+      # ----------------------------------------------
+      - name: Get release tag
+        id: get-release-tag
+        run: |
+          RELEASE_TAG=$(node -e "console.log(require('./package.json').version)")
+          echo "::set-output name=tag::$RELEASE_TAG"
+
+      # ----------------------------------------------
+      # 5. Get latest tag
+      # ----------------------------------------------
+      - name: Get latest tag
+        id: get-latest-tag
+        continue-on-error: true
+        run: |
+          LATEST_TAG=$(git tag -l --sort -v:refname | sed -n 1p)
+          echo "::set-output name=tag::$LATEST_TAG"
+
+      # ----------------------------------------------
+      # 6. Generate changelog
+      # ----------------------------------------------
+      - name: Generate changelog
+        id: changelog
+        run: |
+          changelog=$(gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
+            -f tag_name="v${{ steps.get-release-tag.outputs.tag }}" \
+            -f target_commitish=main \
+            -f previous_tag_name="${{ steps.get-latest-tag.outputs.tag }}" | jq -r ".body")
+          body=$changelog
+          body="${body//'%'/'%25'}"
+          body="${body//$'\n'/'%0A'}"
+          body="${body//$'\r'/'%0D'}"
+          echo "::set-output name=body::$body"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ----------------------------------------------
+      # 7. Create release note
+      #    -d ==> draft
+      #    -n ==> notes
       # ----------------------------------------------
       - name: Create release note
-        run: gh release create ${{ steps.get-tag.outputs.tag }} -d --generate-notes
+        run: |
+          RELEASE_TAG="${{ steps.get-release-tag.outputs.tag }}"
+          NOTE="${{ steps.changelog.outputs.body }}"
 
-    # steps:
-    #   # ----------------------------------------------
-    #   # 1. Get the latest release branch
-    #   # ----------------------------------------------
-    #   - name: Get latest release branch
-    #     id: get-latest-release-branch
-    #     run:
-    #       target_branch=$(git branch --sort=-committerdate -a | grep remotes/origin/release/ | head -n 1 | sed 's/ //g' | sed 's/remotes\/origin\///g')
-    #       echo "::set-output name=latest-release-branch::$(echo $target_branch)\n"
-    #       echo "::set-output name=release-version::$(echo $target_branch | sed 's/release\///g')\n"
-
-    #   # ----------------------------------------------
-    #   # 2. Checkout latest release branch
-    #   # ----------------------------------------------
-    #   - uses: actions/checkout@v3
-    #     with:
-    #       ref: ${{ steps.get-latest-release-branch.outputs.latest-release-branch }}
-
-    #   # ----------------------------------------------
-    #   # 3. Get merge commit list and generate release draft notes
-    #   # nid more testing at this step
-    #   # ----------------------------------------------
-    #   - name: Generate release draft notes
-    #     run: git log --oneline v1.5.4...v1.5.5 | grep 'Merge pull request'
-
-    #   - name: Generate changelog
-    #     id: changelog
-    #     run: |
-    #       echo "::set-output name=tag-name::${GITHUB_REF#refs/tags/}"
-    #       gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
-    #         -f tag_name="${GITHUB_REF#refs/tags/}" \
-    #         -f target_commitish=trunk \
-    #         -q .body > CHANGELOG.md
-    #     env:
-    #       GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-    # ----------------------------------------------
-    # 4. Create release draft
-    # ----------------------------------------------
-    # - uses: actions/create-release@v1
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-    #   with:
-    #     tag_name: ${{ steps.get-latest-release-branch.outputs.release-version }}
-    #     release_name: ${{  steps.get-latest-release-branch.outputs.release-version}}
-    #     draft: true
+          gh release create v$RELEASE_TAG -d -n $NOTE
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -84,7 +84,7 @@ jobs:
         id: get-previous-tag
         continue-on-error: true
         run: |
-          previous-tag=$(git describe --abbrev=0 --tags)
+          previous-tag=$(git tag -l --sort -v:refname | sed -n 1p)
           echo "::set-output name=tag::$previous-tag"
 
       # ----------------------------------------------
