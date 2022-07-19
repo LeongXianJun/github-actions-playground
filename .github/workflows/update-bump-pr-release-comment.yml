@@ -135,3 +135,12 @@ jobs:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           edit-mode: replace
           body: ${{ steps.changelog.outputs.body }}
+
+      # ----------------------------------------------
+      # 10. Respond comment
+      # ----------------------------------------------
+      - name: Update comment
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          reactions: "+1"
