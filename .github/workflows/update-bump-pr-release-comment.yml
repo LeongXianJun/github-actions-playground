@@ -10,6 +10,7 @@ jobs:
     name: Update release comment
     if: |
       github.event.issue.pull_request &&
+      startsWith(github.event.issue.title, 'bump(app): bump version to v') &&
       startsWith(github.event.comment.body, '/')
     runs-on: ubuntu-latest
     steps:
