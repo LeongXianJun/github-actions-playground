@@ -75,14 +75,24 @@ jobs:
         run: git push
 
       # ----------------------------------------------
-      # 6. Generate changelog
+      # 6. Get previous tag
+      # ----------------------------------------------
+      - name: Get previous tag
+        id: get-previous-tag
+        run: |
+          previous-tag=$(git describe --abbrev=0 --tags)
+          echo "::set-output name=tag::$previous-tag"
+
+      # ----------------------------------------------
+      # 7. Generate changelog
       # ----------------------------------------------
       - name: Generate changelog
         id: changelog
         run: |
           changelog=$(gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
             -f tag_name="v${{ steps.checkout-latest-branch.outputs.current-version}}" \
-            -f target_commitish=main | jq -r ".body")
+            -f target_commitish=main \
+            -f previous_tag_name="${{ steps.get-previous-tag.outputs.tag }}" | jq -r ".body")
           body=$changelog
           body="${body//'%'/'%25'}"
           body="${body//$'\n'/'%0A'}"
@@ -92,7 +102,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ----------------------------------------------
-      # 7. Get id of first comment
+      # 8. Get id of first comment
       # ----------------------------------------------
       - name: Find comment
         uses: peter-evans/find-comment@v2
@@ -102,7 +112,7 @@ jobs:
           body-includes: Full Changelog
 
       # ----------------------------------------------
-      # 8. Create release comment OR
+      # 9. Create release comment OR
       # ----------------------------------------------
       - name: Create comment
         if: steps.fc.outputs.comment-id == ''
@@ -112,7 +122,7 @@ jobs:
           body: ${{ steps.changelog.outputs.body }}
 
       # ----------------------------------------------
-      # 8. Update release comment
+      # 9. Update release comment
       # ----------------------------------------------
       - name: Update comment
         if: steps.fc.outputs.comment-id != ''
